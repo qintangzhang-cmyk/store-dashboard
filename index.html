@@ -23,6 +23,7 @@ h1{font-size:20px;font-weight:700;color:#f8fafc}
 .kpi .num{font-size:26px;font-weight:800;color:#f8fafc;line-height:1.1}
 .kpi .sub{font-size:11px;color:#475569;margin-top:2px}
 .kpi .label{font-size:12px;color:#64748b;margin-top:5px}
+.kpi .sub{font-size:11px;color:#475569;margin-top:2px}
 .kpi.c1 .num{color:#60a5fa}
 .kpi.c2 .num{color:#a78bfa}
 .kpi.c3 .num{color:#34d399}
@@ -98,7 +99,7 @@ tfoot td.r{text-align:right}
 
 <div class="page-header">
   <h1>門店到店數據綜合看板</h1>
-  <div class="subtitle">人流計數器（Lark）× 門禁掃碼（長桥後台）· 更新：2026-04-07 15:59</div>
+  <div class="subtitle">人流計數器（Lark）× 門禁掃碼（長桥後台）· 更新：2026-04-07 17:29</div>
 </div>
 
 <!-- Legend -->
@@ -196,6 +197,41 @@ tfoot td.r{text-align:right}
       <span class="card-hint">大門A / 大門B / 側門</span>
     </div>
     <div class="chart-box" id="chartDoors"></div>
+  </div>
+</div>
+
+<!-- Averages -->
+<div class="section-title">平均客流（依篩選區間自動計算）</div>
+<div class="kpi-row" style="margin-bottom:28px">
+  <div class="kpi">
+    <div class="num" id="avgDay">—</div>
+    <div class="label">日均人流</div>
+    <div class="sub" id="avgDayDays"></div>
+  </div>
+  <div class="kpi c1">
+    <div class="num" id="avgWeek">—</div>
+    <div class="label">週均人流</div>
+    <div class="sub" id="avgWeekWeeks"></div>
+  </div>
+  <div class="kpi c2">
+    <div class="num" id="avgMonth">—</div>
+    <div class="label">月均人流</div>
+    <div class="sub" id="avgMonthMonths"></div>
+  </div>
+  <div class="kpi c3">
+    <div class="num" id="avgDayAC">—</div>
+    <div class="label">日均門禁掃碼</div>
+    <div class="sub" id="avgDayACDays"></div>
+  </div>
+  <div class="kpi c4">
+    <div class="num" id="avgWeekAC">—</div>
+    <div class="label">週均門禁掃碼</div>
+    <div class="sub" id="avgWeekACWeeks"></div>
+  </div>
+  <div class="kpi c5">
+    <div class="num" id="avgMonthAC">—</div>
+    <div class="label">月均門禁掃碼</div>
+    <div class="sub" id="avgMonthACMonths"></div>
   </div>
 </div>
 
@@ -343,6 +379,37 @@ function renderTable(){
   document.getElementById('kpiRatio').textContent = tR;
   document.getElementById('statsLabel').innerHTML =
     `<b>${data.length}</b> 天 &nbsp;·&nbsp; 人流 <b>${tT.toLocaleString()}</b> &nbsp;·&nbsp; 掃碼 <b>${tAC.toLocaleString()}</b> &nbsp;·&nbsp; 佔比 <b>${tR}</b>`;
+
+  // ── 計算日均 / 週均 / 月均 ────────────────────────────────
+  const nDays = data.length;
+  if (nDays > 0) {
+    // 週數：按 ISO week 去重
+    const weeks  = new Set(data.map(r => r.week));
+    const months = new Set(data.map(r => r.month));
+    const nWeeks  = weeks.size  || 1;
+    const nMonths = months.size || 1;
+
+    const dayAvgFt  = Math.round(tT  / nDays);
+    const wkAvgFt   = Math.round(tT  / nWeeks);
+    const moAvgFt   = Math.round(tT  / nMonths);
+    const dayAvgAC  = Math.round(tAC / nDays);
+    const wkAvgAC   = Math.round(tAC / nWeeks);
+    const moAvgAC   = Math.round(tAC / nMonths);
+
+    document.getElementById('avgDay').textContent        = dayAvgFt.toLocaleString();
+    document.getElementById('avgWeek').textContent       = wkAvgFt.toLocaleString();
+    document.getElementById('avgMonth').textContent      = moAvgFt.toLocaleString();
+    document.getElementById('avgDayAC').textContent      = dayAvgAC.toLocaleString();
+    document.getElementById('avgWeekAC').textContent     = wkAvgAC.toLocaleString();
+    document.getElementById('avgMonthAC').textContent    = moAvgAC.toLocaleString();
+
+    document.getElementById('avgDayDays').textContent    = `共 ${nDays} 天`;
+    document.getElementById('avgWeekWeeks').textContent  = `共 ${nWeeks} 週`;
+    document.getElementById('avgMonthMonths').textContent= `共 ${nMonths} 個月`;
+    document.getElementById('avgDayACDays').textContent  = `共 ${nDays} 天`;
+    document.getElementById('avgWeekACWeeks').textContent= `共 ${nWeeks} 週`;
+    document.getElementById('avgMonthACMonths').textContent=`共 ${nMonths} 個月`;
+  }
 }
 
 // ── Plotly shared config ──────────────────────────────────────
