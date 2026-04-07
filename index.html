@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>門店到店數據綜合看板</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0d1117;color:#e2e8f0;padding:28px 32px;min-height:100vh}
+
+/* Header */
+.page-header{margin-bottom:28px}
+h1{font-size:20px;font-weight:700;color:#f8fafc}
+.subtitle{font-size:13px;color:#64748b;margin-top:4px}
+
+/* Section label */
+.section-title{font-size:13px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;margin-top:28px}
+
+/* KPI row */
+.kpi-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px}
+.kpi{background:#161c2d;border:1px solid #1e2a3a;border-radius:12px;padding:16px 20px;min-width:140px;flex:1}
+.kpi .num{font-size:26px;font-weight:800;color:#f8fafc;line-height:1.1}
+.kpi .sub{font-size:11px;color:#475569;margin-top:2px}
+.kpi .label{font-size:12px;color:#64748b;margin-top:5px}
+.kpi.c1 .num{color:#60a5fa}
+.kpi.c2 .num{color:#a78bfa}
+.kpi.c3 .num{color:#34d399}
+.kpi.c4 .num{color:#fbbf24}
+.kpi.c5 .num{color:#f87171}
+
+/* Chart cards */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:4px}
+.chart-grid.single{grid-template-columns:1fr}
+@media(max-width:860px){.chart-grid{grid-template-columns:1fr}}
+.card{background:#161c2d;border:1px solid #1e2a3a;border-radius:14px;padding:18px 20px}
+.card.span2{grid-column:1/-1}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:14px;font-weight:600;color:#f1f5f9}
+.card-hint{font-size:12px;color:#475569}
+.toggle-group{display:flex;gap:5px}
+.tbtn{padding:4px 11px;border-radius:6px;border:1px solid #2d3748;background:transparent;color:#94a3b8;font-size:12px;cursor:pointer;transition:all .15s}
+.tbtn.active{background:#1e3a8a;border-color:#3b82f6;color:#fff}
+.chart-box{height:270px}
+.chart-box.sm{height:230px}
+.chart-box.lg{height:310px}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#161c2d;border:1px solid #1e2a3a;border-radius:10px;padding:12px 16px;margin-bottom:14px}
+.filter-bar label{font-size:12px;color:#64748b;margin-right:3px}
+.filter-bar select,.filter-bar input[type=date]{background:#0d1117;border:1px solid #2d3748;color:#e2e8f0;padding:5px 10px;border-radius:7px;font-size:13px;outline:none;cursor:pointer}
+.filter-bar select:focus,.filter-bar input:focus{border-color:#3b82f6}
+.sep{width:1px;height:20px;background:#1e2a3a;margin:0 4px}
+.stats-badge{font-size:13px;color:#94a3b8;margin-left:auto;white-space:nowrap}
+.stats-badge b{color:#f8fafc}
+.clear-btn{padding:4px 11px;border-radius:6px;border:1px solid #2d3748;background:transparent;color:#94a3b8;font-size:12px;cursor:pointer}
+.clear-btn:hover{color:#f8fafc;border-color:#64748b}
+
+/* Table */
+.table-wrap{border-radius:12px;border:1px solid #1e2a3a;overflow:auto;max-height:520px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#0f1623;color:#94a3b8;font-weight:500;padding:10px 13px;text-align:left;border-bottom:1px solid #1e2a3a;white-space:nowrap;position:sticky;top:0;z-index:1;cursor:pointer;user-select:none}
+thead th.r{text-align:right}
+thead th:hover{color:#e2e8f0}
+tbody tr{border-bottom:1px solid #161e2e;transition:background .1s}
+tbody tr:hover{background:#1a2234}
+td{padding:8px 13px;color:#cbd5e1;white-space:nowrap}
+td.r{text-align:right}
+td.date-cell{color:#94a3b8;font-size:12.5px}
+.ratio-pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:12px;font-weight:600;color:#fff}
+.ratio-low{background:rgba(96,165,250,.25);color:#93c5fd}
+.ratio-mid{background:rgba(52,211,153,.25);color:#6ee7b7}
+.ratio-hi{background:rgba(251,191,36,.25);color:#fde68a}
+.ratio-bar-wrap{display:flex;align-items:center;gap:6px;min-width:100px}
+.ratio-bar-bg{flex:1;height:6px;background:#1e2a3a;border-radius:3px;overflow:hidden}
+.ratio-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#3b82f6,#8b5cf6);transition:width .3s}
+tfoot td{background:#0f1623;font-weight:600;color:#f1f5f9;border-top:1px solid #2d3748;position:sticky;bottom:0;padding:9px 13px}
+tfoot td.r{text-align:right}
+.no-data{text-align:center!important;color:#475569;padding:36px;font-size:14px}
+
+/* Legend */
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#64748b;margin-bottom:6px}
+.legend-item{display:flex;align-items:center;gap:5px}
+.dot{width:10px;height:10px;border-radius:2px}
+
+/* Analytics compare cards */
+.cmp-card{background:#161c2d;border:1px solid #1e2a3a;border-radius:12px;padding:16px 20px;flex:1;min-width:160px}
+.cmp-card .cmp-title{font-size:11px;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.cmp-card .cmp-val{font-size:22px;font-weight:800;color:#f8fafc;line-height:1}
+.cmp-card .cmp-sub{font-size:12px;color:#475569;margin-top:4px}
+.cmp-card .cmp-change{display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:700;padding:2px 8px;border-radius:8px;margin-top:6px}
+.cmp-up{background:rgba(52,211,153,.15);color:#34d399}
+.cmp-down{background:rgba(248,113,113,.15);color:#f87171}
+.cmp-flat{background:rgba(148,163,184,.12);color:#94a3b8}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>門店到店數據綜合看板</h1>
+  <div class="subtitle">人流計數器（Lark）× 門禁掃碼（長桥後台）· 更新：2026-04-07 15:59</div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="dot" style="background:#60a5fa"></div>人流計數器（B+C+D）</div>
+  <div class="legend-item"><div class="dot" style="background:#a78bfa"></div>門禁掃碼數</div>
+  <div class="legend-item"><div class="dot" style="background:#34d399"></div>存量用戶佔比（掃碼/人流）</div>
+</div>
+
+<!-- KPI -->
+<div class="section-title">核心指標</div>
+<div class="kpi-row">
+  <div class="kpi c1">
+    <div class="num">81,800</div>
+    <div class="label">累計總人流</div>
+  </div>
+  <div class="kpi c2">
+    <div class="num">2,094</div>
+    <div class="label">累計門禁掃碼</div>
+  </div>
+  <div class="kpi c3">
+    <div class="num">2.6%</div>
+    <div class="label">平均存量用戶佔比</div>
+    <div class="sub">掃碼人數 ÷ 到店總人流</div>
+  </div>
+  <div class="kpi c4">
+    <div class="num">487</div>
+    <div class="label">日均到店人流</div>
+  </div>
+  <div class="kpi c5">
+    <div class="num">1,103</div>
+    <div class="label">單日峰值</div>
+    <div class="sub">2025-11-01</div>
+  </div>
+  <div class="kpi">
+    <div class="num" id="kpiFt">—</div>
+    <div class="label">篩選期間人流</div>
+  </div>
+  <div class="kpi">
+    <div class="num" id="kpiRatio">—</div>
+    <div class="label">篩選期間佔比</div>
+  </div>
+</div>
+
+<!-- Main trend chart -->
+<div class="section-title">趨勢分析</div>
+<div class="card span2" style="margin-bottom:18px">
+  <div class="card-header">
+    <span class="card-title">到店人流 × 存量用戶佔比</span>
+    <div class="toggle-group">
+      <button class="tbtn active" onclick="switchMode('daily',this)">每日</button>
+      <button class="tbtn" onclick="switchMode('weekly',this)">按週</button>
+      <button class="tbtn" onclick="switchMode('monthly',this)">按月</button>
+    </div>
+  </div>
+  <div class="chart-box lg" id="chartMain"></div>
+</div>
+
+<!-- Analytics Section -->
+<div class="section-title">數據分析</div>
+
+<!-- Comparison cards -->
+<div class="kpi-row" style="margin-bottom:18px" id="cmpCards"></div>
+
+<!-- DoW + Heatmap -->
+<div class="chart-grid" style="margin-bottom:28px">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">星期客流分佈</span>
+      <span class="card-hint">各星期平均人流 / 掃碼</span>
+    </div>
+    <div class="chart-box" id="chartDoW"></div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">客流熱力圖</span>
+      <span class="card-hint">週 × 星期幾（每日人流）</span>
+    </div>
+    <div class="chart-box" id="chartHeatmap"></div>
+  </div>
+</div>
+
+<!-- Two charts side by side -->
+<div class="chart-grid" style="margin-bottom:28px">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">月度人流 × 掃碼對比</span>
+      <span class="card-hint">柱 = 人流，線 = 掃碼</span>
+    </div>
+    <div class="chart-box" id="chartMonthly"></div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">三門進入佔比</span>
+      <span class="card-hint">大門A / 大門B / 側門</span>
+    </div>
+    <div class="chart-box" id="chartDoors"></div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="section-title">明細數據</div>
+<div class="filter-bar">
+  <label>月份</label>
+  <select id="fMonth" onchange="applyFilters()"><option value="">全部</option></select>
+  <div class="sep"></div>
+  <label>週</label>
+  <select id="fWeek" onchange="applyFilters()"><option value="">全部</option></select>
+  <div class="sep"></div>
+  <label>從</label>
+  <input type="date" id="fFrom" onchange="applyFilters()">
+  <label>至</label>
+  <input type="date" id="fTo" onchange="applyFilters()">
+  <div class="sep"></div>
+  <button class="clear-btn" onclick="clearFilters()">重置</button>
+  <div class="stats-badge" id="statsLabel">—</div>
+</div>
+
+<!-- Table -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th onclick="sortBy('date')">日期 ↕</th>
+        <th class="r" onclick="sortBy('gate_a')">大門A ↕</th>
+        <th class="r" onclick="sortBy('gate_b')">大門B ↕</th>
+        <th class="r" onclick="sortBy('side')">側門 ↕</th>
+        <th class="r" onclick="sortBy('total')">人流合計 ↕</th>
+        <th class="r" onclick="sortBy('ac')">門禁掃碼 ↕</th>
+        <th onclick="sortBy('ratio')">存量佔比 ↕</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+    <tfoot><tr>
+      <td>合計 / 均值</td>
+      <td class="r" id="ftA">—</td>
+      <td class="r" id="ftB">—</td>
+      <td class="r" id="ftS">—</td>
+      <td class="r" id="ftT">—</td>
+      <td class="r" id="ftAC">—</td>
+      <td id="ftR">—</td>
+    </tr></tfoot>
+  </table>
+</div>
+
+<script>
+const RAW      = [{"date": "2025-10-18", "month": "2025-10", "week": "2025-W42", "gate_a": 385, "gate_b": 331, "side": 97, "total": 813, "ac": 36, "ratio": 4.4}, {"date": "2025-10-19", "month": "2025-10", "week": "2025-W42", "gate_a": 355, "gate_b": 304, "side": 101, "total": 760, "ac": 36, "ratio": 4.7}, {"date": "2025-10-20", "month": "2025-10", "week": "2025-W43", "gate_a": 235, "gate_b": 133, "side": 155, "total": 523, "ac": 33, "ratio": 6.3}, {"date": "2025-10-21", "month": "2025-10", "week": "2025-W43", "gate_a": 173, "gate_b": 184, "side": 128, "total": 485, "ac": 13, "ratio": 2.7}, {"date": "2025-10-22", "month": "2025-10", "week": "2025-W43", "gate_a": 168, "gate_b": 142, "side": 94, "total": 404, "ac": 16, "ratio": 4.0}, {"date": "2025-10-23", "month": "2025-10", "week": "2025-W43", "gate_a": 197, "gate_b": 219, "side": 117, "total": 533, "ac": 17, "ratio": 3.2}, {"date": "2025-10-24", "month": "2025-10", "week": "2025-W43", "gate_a": 258, "gate_b": 208, "side": 139, "total": 605, "ac": 17, "ratio": 2.8}, {"date": "2025-10-25", "month": "2025-10", "week": "2025-W43", "gate_a": 356, "gate_b": 460, "side": 226, "total": 1042, "ac": 46, "ratio": 4.4}, {"date": "2025-10-26", "month": "2025-10", "week": "2025-W43", "gate_a": 308, "gate_b": 315, "side": 145, "total": 768, "ac": 47, "ratio": 6.1}, {"date": "2025-10-27", "month": "2025-10", "week": "2025-W44", "gate_a": 235, "gate_b": 144, "side": 135, "total": 514, "ac": 20, "ratio": 3.9}, {"date": "2025-10-28", "month": "2025-10", "week": "2025-W44", "gate_a": 161, "gate_b": 133, "side": 107, "total": 401, "ac": 16, "ratio": 4.0}, {"date": "2025-10-29", "month": "2025-10", "week": "2025-W44", "gate_a": 257, "gate_b": 232, "side": 123, "total": 612, "ac": 25, "ratio": 4.1}, {"date": "2025-10-30", "month": "2025-10", "week": "2025-W44", "gate_a": 213, "gate_b": 174, "side": 131, "total": 518, "ac": 13, "ratio": 2.5}, {"date": "2025-10-31", "month": "2025-10", "week": "2025-W44", "gate_a": 225, "gate_b": 231, "side": 257, "total": 713, "ac": 32, "ratio": 4.5}, {"date": "2025-11-01", "month": "2025-11", "week": "2025-W44", "gate_a": 481, "gate_b": 407, "side": 215, "total": 1103, "ac": 39, "ratio": 3.5}, {"date": "2025-11-02", "month": "2025-11", "week": "2025-W44", "gate_a": 239, "gate_b": 270, "side": 102, "total": 611, "ac": 17, "ratio": 2.8}, {"date": "2025-11-03", "month": "2025-11", "week": "2025-W45", "gate_a": 175, "gate_b": 182, "side": 125, "total": 482, "ac": 19, "ratio": 3.9}, {"date": "2025-11-04", "month": "2025-11", "week": "2025-W45", "gate_a": 174, "gate_b": 164, "side": 98, "total": 436, "ac": 16, "ratio": 3.7}, {"date": "2025-11-05", "month": "2025-11", "week": "2025-W45", "gate_a": 152, "gate_b": 163, "side": 146, "total": 461, "ac": 17, "ratio": 3.7}, {"date": "2025-11-06", "month": "2025-11", "week": "2025-W45", "gate_a": 174, "gate_b": 187, "side": 140, "total": 501, "ac": 15, "ratio": 3.0}, {"date": "2025-11-07", "month": "2025-11", "week": "2025-W45", "gate_a": 163, "gate_b": 188, "side": 123, "total": 474, "ac": 25, "ratio": 5.3}, {"date": "2025-11-08", "month": "2025-11", "week": "2025-W45", "gate_a": 290, "gate_b": 326, "side": 170, "total": 786, "ac": 48, "ratio": 6.1}, {"date": "2025-11-09", "month": "2025-11", "week": "2025-W45", "gate_a": 238, "gate_b": 228, "side": 117, "total": 583, "ac": 16, "ratio": 2.7}, {"date": "2025-11-10", "month": "2025-11", "week": "2025-W46", "gate_a": 115, "gate_b": 131, "side": 122, "total": 368, "ac": 11, "ratio": 3.0}, {"date": "2025-11-11", "month": "2025-11", "week": "2025-W46", "gate_a": 145, "gate_b": 146, "side": 128, "total": 419, "ac": 11, "ratio": 2.6}, {"date": "2025-11-12", "month": "2025-11", "week": "2025-W46", "gate_a": 123, "gate_b": 145, "side": 85, "total": 353, "ac": 7, "ratio": 2.0}, {"date": "2025-11-13", "month": "2025-11", "week": "2025-W46", "gate_a": 205, "gate_b": 147, "side": 114, "total": 466, "ac": 14, "ratio": 3.0}, {"date": "2025-11-14", "month": "2025-11", "week": "2025-W46", "gate_a": 189, "gate_b": 153, "side": 192, "total": 534, "ac": 15, "ratio": 2.8}, {"date": "2025-11-15", "month": "2025-11", "week": "2025-W46", "gate_a": 299, "gate_b": 333, "side": 174, "total": 806, "ac": 28, "ratio": 3.5}, {"date": "2025-11-16", "month": "2025-11", "week": "2025-W46", "gate_a": 148, "gate_b": 253, "side": 92, "total": 493, "ac": 25, "ratio": 5.1}, {"date": "2025-11-17", "month": "2025-11", "week": "2025-W47", "gate_a": 106, "gate_b": 132, "side": 118, "total": 356, "ac": 13, "ratio": 3.7}, {"date": "2025-11-18", "month": "2025-11", "week": "2025-W47", "gate_a": 84, "gate_b": 152, "side": 99, "total": 335, "ac": 10, "ratio": 3.0}, {"date": "2025-11-19", "month": "2025-11", "week": "2025-W47", "gate_a": 88, "gate_b": 120, "side": 118, "total": 326, "ac": 7, "ratio": 2.1}, {"date": "2025-11-20", "month": "2025-11", "week": "2025-W47", "gate_a": 101, "gate_b": 160, "side": 112, "total": 373, "ac": 14, "ratio": 3.8}, {"date": "2025-11-21", "month": "2025-11", "week": "2025-W47", "gate_a": 149, "gate_b": 155, "side": 103, "total": 407, "ac": 20, "ratio": 4.9}, {"date": "2025-11-22", "month": "2025-11", "week": "2025-W47", "gate_a": 247, "gate_b": 209, "side": 164, "total": 620, "ac": 34, "ratio": 5.5}, {"date": "2025-11-23", "month": "2025-11", "week": "2025-W47", "gate_a": 228, "gate_b": 191, "side": 106, "total": 525, "ac": 25, "ratio": 4.8}, {"date": "2025-11-24", "month": "2025-11", "week": "2025-W48", "gate_a": 126, "gate_b": 94, "side": 130, "total": 350, "ac": 6, "ratio": 1.7}, {"date": "2025-11-25", "month": "2025-11", "week": "2025-W48", "gate_a": 126, "gate_b": 162, "side": 117, "total": 405, "ac": 9, "ratio": 2.2}, {"date": "2025-11-26", "month": "2025-11", "week": "2025-W48", "gate_a": 116, "gate_b": 95, "side": 103, "total": 314, "ac": 19, "ratio": 6.1}, {"date": "2025-11-27", "month": "2025-11", "week": "2025-W48", "gate_a": 123, "gate_b": 179, "side": 136, "total": 438, "ac": 13, "ratio": 3.0}, {"date": "2025-11-28", "month": "2025-11", "week": "2025-W48", "gate_a": 141, "gate_b": 162, "side": 177, "total": 480, "ac": 8, "ratio": 1.7}, {"date": "2025-11-29", "month": "2025-11", "week": "2025-W48", "gate_a": 122, "gate_b": 257, "side": 134, "total": 513, "ac": 41, "ratio": 8.0}, {"date": "2025-11-30", "month": "2025-11", "week": "2025-W48", "gate_a": 314, "gate_b": 229, "side": 168, "total": 711, "ac": 14, "ratio": 2.0}, {"date": "2025-12-01", "month": "2025-12", "week": "2025-W49", "gate_a": 108, "gate_b": 135, "side": 99, "total": 342, "ac": 11, "ratio": 3.2}, {"date": "2025-12-02", "month": "2025-12", "week": "2025-W49", "gate_a": 88, "gate_b": 141, "side": 105, "total": 334, "ac": 7, "ratio": 2.1}, {"date": "2025-12-03", "month": "2025-12", "week": "2025-W49", "gate_a": 90, "gate_b": 105, "side": 132, "total": 327, "ac": 11, "ratio": 3.4}, {"date": "2025-12-04", "month": "2025-12", "week": "2025-W49", "gate_a": 81, "gate_b": 151, "side": 142, "total": 374, "ac": 7, "ratio": 1.9}, {"date": "2025-12-05", "month": "2025-12", "week": "2025-W49", "gate_a": 159, "gate_b": 149, "side": 111, "total": 419, "ac": 7, "ratio": 1.7}, {"date": "2025-12-06", "month": "2025-12", "week": "2025-W49", "gate_a": 293, "gate_b": 304, "side": 174, "total": 771, "ac": 28, "ratio": 3.6}, {"date": "2025-12-07", "month": "2025-12", "week": "2025-W49", "gate_a": 148, "gate_b": 201, "side": 127, "total": 476, "ac": 16, "ratio": 3.4}, {"date": "2025-12-08", "month": "2025-12", "week": "2025-W50", "gate_a": 113, "gate_b": 135, "side": 126, "total": 374, "ac": 6, "ratio": 1.6}, {"date": "2025-12-09", "month": "2025-12", "week": "2025-W50", "gate_a": 120, "gate_b": 127, "side": 143, "total": 390, "ac": 7, "ratio": 1.8}, {"date": "2025-12-10", "month": "2025-12", "week": "2025-W50", "gate_a": 121, "gate_b": 124, "side": 128, "total": 373, "ac": 16, "ratio": 4.3}, {"date": "2025-12-11", "month": "2025-12", "week": "2025-W50", "gate_a": 87, "gate_b": 152, "side": 111, "total": 350, "ac": 9, "ratio": 2.6}, {"date": "2025-12-12", "month": "2025-12", "week": "2025-W50", "gate_a": 170, "gate_b": 111, "side": 150, "total": 431, "ac": 18, "ratio": 4.2}, {"date": "2025-12-13", "month": "2025-12", "week": "2025-W50", "gate_a": 245, "gate_b": 298, "side": 157, "total": 700, "ac": 25, "ratio": 3.6}, {"date": "2025-12-14", "month": "2025-12", "week": "2025-W50", "gate_a": 175, "gate_b": 188, "side": 116, "total": 479, "ac": 23, "ratio": 4.8}, {"date": "2025-12-15", "month": "2025-12", "week": "2025-W51", "gate_a": 115, "gate_b": 141, "side": 118, "total": 374, "ac": 10, "ratio": 2.7}, {"date": "2025-12-16", "month": "2025-12", "week": "2025-W51", "gate_a": 173, "gate_b": 156, "side": 144, "total": 473, "ac": 12, "ratio": 2.5}, {"date": "2025-12-17", "month": "2025-12", "week": "2025-W51", "gate_a": 140, "gate_b": 173, "side": 136, "total": 449, "ac": 15, "ratio": 3.3}, {"date": "2025-12-18", "month": "2025-12", "week": "2025-W51", "gate_a": 128, "gate_b": 128, "side": 160, "total": 416, "ac": 12, "ratio": 2.9}, {"date": "2025-12-19", "month": "2025-12", "week": "2025-W51", "gate_a": 99, "gate_b": 168, "side": 138, "total": 405, "ac": 17, "ratio": 4.2}, {"date": "2025-12-20", "month": "2025-12", "week": "2025-W51", "gate_a": 259, "gate_b": 347, "side": 197, "total": 803, "ac": 39, "ratio": 4.9}, {"date": "2025-12-21", "month": "2025-12", "week": "2025-W51", "gate_a": 210, "gate_b": 257, "side": 137, "total": 604, "ac": 20, "ratio": 3.3}, {"date": "2025-12-22", "month": "2025-12", "week": "2025-W52", "gate_a": 143, "gate_b": 173, "side": 118, "total": 434, "ac": 17, "ratio": 3.9}, {"date": "2025-12-23", "month": "2025-12", "week": "2025-W52", "gate_a": 152, "gate_b": 161, "side": 210, "total": 523, "ac": 22, "ratio": 4.2}, {"date": "2025-12-24", "month": "2025-12", "week": "2025-W52", "gate_a": 214, "gate_b": 181, "side": 171, "total": 566, "ac": 11, "ratio": 1.9}, {"date": "2025-12-25", "month": "2025-12", "week": "2025-W52", "gate_a": 231, "gate_b": 278, "side": 152, "total": 661, "ac": 32, "ratio": 4.8}, {"date": "2025-12-26", "month": "2025-12", "week": "2025-W52", "gate_a": 183, "gate_b": 254, "side": 120, "total": 557, "ac": 13, "ratio": 2.3}, {"date": "2025-12-27", "month": "2025-12", "week": "2025-W52", "gate_a": 305, "gate_b": 290, "side": 197, "total": 792, "ac": 31, "ratio": 3.9}, {"date": "2025-12-28", "month": "2025-12", "week": "2025-W52", "gate_a": 194, "gate_b": 287, "side": 135, "total": 616, "ac": 24, "ratio": 3.9}, {"date": "2025-12-29", "month": "2025-12", "week": "2026-W01", "gate_a": 171, "gate_b": 176, "side": 199, "total": 546, "ac": 22, "ratio": 4.0}, {"date": "2025-12-30", "month": "2025-12", "week": "2026-W01", "gate_a": 196, "gate_b": 210, "side": 164, "total": 570, "ac": 30, "ratio": 5.3}, {"date": "2025-12-31", "month": "2025-12", "week": "2026-W01", "gate_a": 269, "gate_b": 276, "side": 200, "total": 745, "ac": 18, "ratio": 2.4}, {"date": "2026-01-01", "month": "2026-01", "week": "2026-W01", "gate_a": 181, "gate_b": 233, "side": 143, "total": 557, "ac": 13, "ratio": 2.3}, {"date": "2026-01-02", "month": "2026-01", "week": "2026-W01", "gate_a": 221, "gate_b": 263, "side": 180, "total": 664, "ac": 17, "ratio": 2.6}, {"date": "2026-01-03", "month": "2026-01", "week": "2026-W01", "gate_a": 212, "gate_b": 229, "side": 136, "total": 577, "ac": 7, "ratio": 1.2}, {"date": "2026-01-04", "month": "2026-01", "week": "2026-W01", "gate_a": 152, "gate_b": 167, "side": 107, "total": 426, "ac": 11, "ratio": 2.6}, {"date": "2026-01-05", "month": "2026-01", "week": "2026-W02", "gate_a": 115, "gate_b": 109, "side": 102, "total": 326, "ac": 8, "ratio": 2.5}, {"date": "2026-01-06", "month": "2026-01", "week": "2026-W02", "gate_a": 112, "gate_b": 124, "side": 102, "total": 338, "ac": 10, "ratio": 3.0}, {"date": "2026-01-07", "month": "2026-01", "week": "2026-W02", "gate_a": 89, "gate_b": 119, "side": 107, "total": 315, "ac": 6, "ratio": 1.9}, {"date": "2026-01-08", "month": "2026-01", "week": "2026-W02", "gate_a": 111, "gate_b": 133, "side": 114, "total": 358, "ac": 13, "ratio": 3.6}, {"date": "2026-01-09", "month": "2026-01", "week": "2026-W02", "gate_a": 106, "gate_b": 166, "side": 127, "total": 399, "ac": 8, "ratio": 2.0}, {"date": "2026-01-10", "month": "2026-01", "week": "2026-W02", "gate_a": 220, "gate_b": 277, "side": 203, "total": 700, "ac": 10, "ratio": 1.4}, {"date": "2026-01-11", "month": "2026-01", "week": "2026-W02", "gate_a": 143, "gate_b": 168, "side": 105, "total": 416, "ac": 9, "ratio": 2.2}, {"date": "2026-01-12", "month": "2026-01", "week": "2026-W03", "gate_a": 100, "gate_b": 89, "side": 104, "total": 293, "ac": 6, "ratio": 2.0}, {"date": "2026-01-13", "month": "2026-01", "week": "2026-W03", "gate_a": 133, "gate_b": 133, "side": 141, "total": 407, "ac": 4, "ratio": 1.0}, {"date": "2026-01-14", "month": "2026-01", "week": "2026-W03", "gate_a": 113, "gate_b": 137, "side": 119, "total": 369, "ac": 5, "ratio": 1.4}, {"date": "2026-01-15", "month": "2026-01", "week": "2026-W03", "gate_a": 133, "gate_b": 124, "side": 114, "total": 371, "ac": 8, "ratio": 2.2}, {"date": "2026-01-16", "month": "2026-01", "week": "2026-W03", "gate_a": 202, "gate_b": 162, "side": 136, "total": 500, "ac": 12, "ratio": 2.4}, {"date": "2026-01-17", "month": "2026-01", "week": "2026-W03", "gate_a": 341, "gate_b": 338, "side": 106, "total": 785, "ac": 11, "ratio": 1.4}, {"date": "2026-01-18", "month": "2026-01", "week": "2026-W03", "gate_a": 279, "gate_b": 270, "side": 111, "total": 660, "ac": 10, "ratio": 1.5}, {"date": "2026-01-19", "month": "2026-01", "week": "2026-W04", "gate_a": 125, "gate_b": 179, "side": 69, "total": 373, "ac": 4, "ratio": 1.1}, {"date": "2026-01-20", "month": "2026-01", "week": "2026-W04", "gate_a": 151, "gate_b": 172, "side": 101, "total": 424, "ac": 6, "ratio": 1.4}, {"date": "2026-01-21", "month": "2026-01", "week": "2026-W04", "gate_a": 122, "gate_b": 196, "side": 65, "total": 383, "ac": 5, "ratio": 1.3}, {"date": "2026-01-22", "month": "2026-01", "week": "2026-W04", "gate_a": 156, "gate_b": 179, "side": 71, "total": 406, "ac": 6, "ratio": 1.5}, {"date": "2026-01-23", "month": "2026-01", "week": "2026-W04", "gate_a": 130, "gate_b": 275, "side": 148, "total": 553, "ac": 3, "ratio": 0.5}, {"date": "2026-01-24", "month": "2026-01", "week": "2026-W04", "gate_a": 197, "gate_b": 319, "side": 118, "total": 634, "ac": 14, "ratio": 2.2}, {"date": "2026-01-25", "month": "2026-01", "week": "2026-W04", "gate_a": 213, "gate_b": 300, "side": 70, "total": 583, "ac": 5, "ratio": 0.9}, {"date": "2026-01-26", "month": "2026-01", "week": "2026-W05", "gate_a": 176, "gate_b": 179, "side": 96, "total": 451, "ac": 11, "ratio": 2.4}, {"date": "2026-01-27", "month": "2026-01", "week": "2026-W05", "gate_a": 140, "gate_b": 149, "side": 77, "total": 366, "ac": 5, "ratio": 1.4}, {"date": "2026-01-28", "month": "2026-01", "week": "2026-W05", "gate_a": 160, "gate_b": 188, "side": 71, "total": 419, "ac": 4, "ratio": 1.0}, {"date": "2026-01-29", "month": "2026-01", "week": "2026-W05", "gate_a": 145, "gate_b": 185, "side": 115, "total": 445, "ac": 9, "ratio": 2.0}, {"date": "2026-01-30", "month": "2026-01", "week": "2026-W05", "gate_a": 190, "gate_b": 215, "side": 80, "total": 485, "ac": 10, "ratio": 2.1}, {"date": "2026-01-31", "month": "2026-01", "week": "2026-W05", "gate_a": 271, "gate_b": 323, "side": 111, "total": 705, "ac": 9, "ratio": 1.3}, {"date": "2026-02-01", "month": "2026-02", "week": "2026-W05", "gate_a": 225, "gate_b": 217, "side": 94, "total": 536, "ac": 12, "ratio": 2.2}, {"date": "2026-02-02", "month": "2026-02", "week": "2026-W06", "gate_a": 132, "gate_b": 143, "side": 67, "total": 342, "ac": 3, "ratio": 0.9}, {"date": "2026-02-03", "month": "2026-02", "week": "2026-W06", "gate_a": 120, "gate_b": 181, "side": 106, "total": 407, "ac": 6, "ratio": 1.5}, {"date": "2026-02-04", "month": "2026-02", "week": "2026-W06", "gate_a": 206, "gate_b": 212, "side": 81, "total": 499, "ac": 15, "ratio": 3.0}, {"date": "2026-02-05", "month": "2026-02", "week": "2026-W06", "gate_a": 151, "gate_b": 176, "side": 87, "total": 414, "ac": 8, "ratio": 1.9}, {"date": "2026-02-06", "month": "2026-02", "week": "2026-W06", "gate_a": 168, "gate_b": 203, "side": 77, "total": 448, "ac": 3, "ratio": 0.7}, {"date": "2026-02-07", "month": "2026-02", "week": "2026-W06", "gate_a": 168, "gate_b": 300, "side": 138, "total": 606, "ac": 9, "ratio": 1.5}, {"date": "2026-02-08", "month": "2026-02", "week": "2026-W06", "gate_a": 185, "gate_b": 212, "side": 121, "total": 518, "ac": 8, "ratio": 1.5}, {"date": "2026-02-09", "month": "2026-02", "week": "2026-W07", "gate_a": 94, "gate_b": 194, "side": 160, "total": 448, "ac": 2, "ratio": 0.4}, {"date": "2026-02-10", "month": "2026-02", "week": "2026-W07", "gate_a": 82, "gate_b": 120, "side": 158, "total": 360, "ac": 3, "ratio": 0.8}, {"date": "2026-02-11", "month": "2026-02", "week": "2026-W07", "gate_a": 104, "gate_b": 118, "side": 113, "total": 335, "ac": 6, "ratio": 1.8}, {"date": "2026-02-12", "month": "2026-02", "week": "2026-W07", "gate_a": 109, "gate_b": 142, "side": 136, "total": 387, "ac": 8, "ratio": 2.1}, {"date": "2026-02-13", "month": "2026-02", "week": "2026-W07", "gate_a": 123, "gate_b": 158, "side": 284, "total": 565, "ac": 4, "ratio": 0.7}, {"date": "2026-02-14", "month": "2026-02", "week": "2026-W07", "gate_a": 178, "gate_b": 252, "side": 118, "total": 548, "ac": 9, "ratio": 1.6}, {"date": "2026-02-15", "month": "2026-02", "week": "2026-W07", "gate_a": 133, "gate_b": 132, "side": 75, "total": 340, "ac": 6, "ratio": 1.8}, {"date": "2026-02-16", "month": "2026-02", "week": "2026-W08", "gate_a": 107, "gate_b": 142, "side": 90, "total": 339, "ac": 4, "ratio": 1.2}, {"date": "2026-02-20", "month": "2026-02", "week": "2026-W08", "gate_a": 206, "gate_b": 232, "side": 167, "total": 605, "ac": 11, "ratio": 1.8}, {"date": "2026-02-21", "month": "2026-02", "week": "2026-W08", "gate_a": 158, "gate_b": 241, "side": 141, "total": 540, "ac": 9, "ratio": 1.7}, {"date": "2026-02-22", "month": "2026-02", "week": "2026-W08", "gate_a": 183, "gate_b": 162, "side": 140, "total": 485, "ac": 6, "ratio": 1.2}, {"date": "2026-02-23", "month": "2026-02", "week": "2026-W09", "gate_a": 119, "gate_b": 131, "side": 130, "total": 380, "ac": 4, "ratio": 1.1}, {"date": "2026-02-24", "month": "2026-02", "week": "2026-W09", "gate_a": 121, "gate_b": 147, "side": 108, "total": 376, "ac": 8, "ratio": 2.1}, {"date": "2026-02-25", "month": "2026-02", "week": "2026-W09", "gate_a": 85, "gate_b": 133, "side": 144, "total": 362, "ac": 2, "ratio": 0.6}, {"date": "2026-02-26", "month": "2026-02", "week": "2026-W09", "gate_a": 102, "gate_b": 123, "side": 144, "total": 369, "ac": 6, "ratio": 1.6}, {"date": "2026-02-27", "month": "2026-02", "week": "2026-W09", "gate_a": 170, "gate_b": 166, "side": 245, "total": 581, "ac": 4, "ratio": 0.7}, {"date": "2026-02-28", "month": "2026-02", "week": "2026-W09", "gate_a": 117, "gate_b": 162, "side": 166, "total": 445, "ac": 4, "ratio": 0.9}, {"date": "2026-03-01", "month": "2026-03", "week": "2026-W09", "gate_a": 109, "gate_b": 173, "side": 108, "total": 390, "ac": 5, "ratio": 1.3}, {"date": "2026-03-02", "month": "2026-03", "week": "2026-W10", "gate_a": 60, "gate_b": 128, "side": 159, "total": 347, "ac": 2, "ratio": 0.6}, {"date": "2026-03-03", "month": "2026-03", "week": "2026-W10", "gate_a": 75, "gate_b": 122, "side": 147, "total": 344, "ac": 3, "ratio": 0.9}, {"date": "2026-03-04", "month": "2026-03", "week": "2026-W10", "gate_a": 94, "gate_b": 121, "side": 112, "total": 327, "ac": 7, "ratio": 2.1}, {"date": "2026-03-05", "month": "2026-03", "week": "2026-W10", "gate_a": 75, "gate_b": 127, "side": 221, "total": 423, "ac": 4, "ratio": 0.9}, {"date": "2026-03-06", "month": "2026-03", "week": "2026-W10", "gate_a": 97, "gate_b": 171, "side": 114, "total": 382, "ac": 7, "ratio": 1.8}, {"date": "2026-03-07", "month": "2026-03", "week": "2026-W10", "gate_a": 175, "gate_b": 198, "side": 165, "total": 538, "ac": 5, "ratio": 0.9}, {"date": "2026-03-08", "month": "2026-03", "week": "2026-W10", "gate_a": 128, "gate_b": 151, "side": 101, "total": 380, "ac": 7, "ratio": 1.8}, {"date": "2026-03-09", "month": "2026-03", "week": "2026-W11", "gate_a": 120, "gate_b": 138, "side": 179, "total": 437, "ac": 8, "ratio": 1.8}, {"date": "2026-03-10", "month": "2026-03", "week": "2026-W11", "gate_a": 120, "gate_b": 130, "side": 203, "total": 453, "ac": 8, "ratio": 1.8}, {"date": "2026-03-11", "month": "2026-03", "week": "2026-W11", "gate_a": 125, "gate_b": 142, "side": 125, "total": 392, "ac": 2, "ratio": 0.5}, {"date": "2026-03-12", "month": "2026-03", "week": "2026-W11", "gate_a": 124, "gate_b": 147, "side": 139, "total": 410, "ac": 3, "ratio": 0.7}, {"date": "2026-03-13", "month": "2026-03", "week": "2026-W11", "gate_a": 199, "gate_b": 235, "side": 224, "total": 658, "ac": 7, "ratio": 1.1}, {"date": "2026-03-14", "month": "2026-03", "week": "2026-W11", "gate_a": 208, "gate_b": 315, "side": 172, "total": 695, "ac": 12, "ratio": 1.7}, {"date": "2026-03-15", "month": "2026-03", "week": "2026-W11", "gate_a": 125, "gate_b": 170, "side": 120, "total": 415, "ac": 9, "ratio": 2.2}, {"date": "2026-03-16", "month": "2026-03", "week": "2026-W12", "gate_a": 119, "gate_b": 149, "side": 205, "total": 473, "ac": 7, "ratio": 1.5}, {"date": "2026-03-17", "month": "2026-03", "week": "2026-W12", "gate_a": 54, "gate_b": 162, "side": 267, "total": 483, "ac": 4, "ratio": 0.8}, {"date": "2026-03-18", "month": "2026-03", "week": "2026-W12", "gate_a": 51, "gate_b": 102, "side": 205, "total": 358, "ac": 4, "ratio": 1.1}, {"date": "2026-03-19", "month": "2026-03", "week": "2026-W12", "gate_a": 69, "gate_b": 186, "side": 275, "total": 530, "ac": 7, "ratio": 1.3}, {"date": "2026-03-20", "month": "2026-03", "week": "2026-W12", "gate_a": 80, "gate_b": 101, "side": 325, "total": 506, "ac": 11, "ratio": 2.2}, {"date": "2026-03-21", "month": "2026-03", "week": "2026-W12", "gate_a": 184, "gate_b": 199, "side": 346, "total": 729, "ac": 6, "ratio": 0.8}, {"date": "2026-03-22", "month": "2026-03", "week": "2026-W12", "gate_a": 131, "gate_b": 141, "side": 227, "total": 499, "ac": 6, "ratio": 1.2}, {"date": "2026-03-23", "month": "2026-03", "week": "2026-W13", "gate_a": 128, "gate_b": 69, "side": 237, "total": 434, "ac": 2, "ratio": 0.5}, {"date": "2026-03-24", "month": "2026-03", "week": "2026-W13", "gate_a": 204, "gate_b": 68, "side": 121, "total": 393, "ac": 5, "ratio": 1.3}, {"date": "2026-03-25", "month": "2026-03", "week": "2026-W13", "gate_a": 156, "gate_b": 71, "side": 134, "total": 361, "ac": 5, "ratio": 1.4}, {"date": "2026-03-26", "month": "2026-03", "week": "2026-W13", "gate_a": 137, "gate_b": 103, "side": 141, "total": 381, "ac": 5, "ratio": 1.3}, {"date": "2026-03-27", "month": "2026-03", "week": "2026-W13", "gate_a": 192, "gate_b": 100, "side": 133, "total": 425, "ac": 7, "ratio": 1.6}, {"date": "2026-03-28", "month": "2026-03", "week": "2026-W13", "gate_a": 213, "gate_b": 231, "side": 278, "total": 722, "ac": 7, "ratio": 1.0}, {"date": "2026-03-29", "month": "2026-03", "week": "2026-W13", "gate_a": 153, "gate_b": 103, "side": 211, "total": 467, "ac": 11, "ratio": 2.4}, {"date": "2026-03-30", "month": "2026-03", "week": "2026-W14", "gate_a": 114, "gate_b": 200, "side": 86, "total": 400, "ac": 5, "ratio": 1.2}, {"date": "2026-03-31", "month": "2026-03", "week": "2026-W14", "gate_a": 122, "gate_b": 106, "side": 85, "total": 313, "ac": 5, "ratio": 1.6}, {"date": "2026-04-01", "month": "2026-04", "week": "2026-W14", "gate_a": 72, "gate_b": 125, "side": 130, "total": 327, "ac": 2, "ratio": 0.6}, {"date": "2026-04-02", "month": "2026-04", "week": "2026-W14", "gate_a": 126, "gate_b": 121, "side": 93, "total": 340, "ac": 3, "ratio": 0.9}, {"date": "2026-04-03", "month": "2026-04", "week": "2026-W14", "gate_a": 86, "gate_b": 174, "side": 110, "total": 370, "ac": 4, "ratio": 1.1}, {"date": "2026-04-04", "month": "2026-04", "week": "2026-W14", "gate_a": 97, "gate_b": 156, "side": 120, "total": 373, "ac": 4, "ratio": 1.1}, {"date": "2026-04-05", "month": "2026-04", "week": "2026-W14", "gate_a": 185, "gate_b": 303, "side": 185, "total": 673, "ac": 11, "ratio": 1.6}, {"date": "2026-04-06", "month": "2026-04", "week": "2026-W15", "gate_a": 114, "gate_b": 128, "side": 93, "total": 335, "ac": 6, "ratio": 1.8}];
+const CHARTS   = {"daily": {"labels": ["2025-10-18", "2025-10-19", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-25", "2025-10-26", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-01", "2025-11-02", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-08", "2025-11-09", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-15", "2025-11-16", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-22", "2025-11-23", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-27", "2025-11-28", "2025-11-29", "2025-11-30", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-06", "2025-12-07", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-13", "2025-12-14", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-20", "2025-12-21", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-25", "2025-12-26", "2025-12-27", "2025-12-28", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-24", "2026-01-25", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-01-31", "2026-02-01", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-07", "2026-02-08", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-14", "2026-02-15", "2026-02-16", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-02-28", "2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-07", "2026-03-08", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-14", "2026-03-15", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-21", "2026-03-22", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-28", "2026-03-29", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06"], "total": [813, 760, 523, 485, 404, 533, 605, 1042, 768, 514, 401, 612, 518, 713, 1103, 611, 482, 436, 461, 501, 474, 786, 583, 368, 419, 353, 466, 534, 806, 493, 356, 335, 326, 373, 407, 620, 525, 350, 405, 314, 438, 480, 513, 711, 342, 334, 327, 374, 419, 771, 476, 374, 390, 373, 350, 431, 700, 479, 374, 473, 449, 416, 405, 803, 604, 434, 523, 566, 661, 557, 792, 616, 546, 570, 745, 557, 664, 577, 426, 326, 338, 315, 358, 399, 700, 416, 293, 407, 369, 371, 500, 785, 660, 373, 424, 383, 406, 553, 634, 583, 451, 366, 419, 445, 485, 705, 536, 342, 407, 499, 414, 448, 606, 518, 448, 360, 335, 387, 565, 548, 340, 339, 605, 540, 485, 380, 376, 362, 369, 581, 445, 390, 347, 344, 327, 423, 382, 538, 380, 437, 453, 392, 410, 658, 695, 415, 473, 483, 358, 530, 506, 729, 499, 434, 393, 361, 381, 425, 722, 467, 400, 313, 327, 340, 370, 373, 673, 335], "gate_a": [385, 355, 235, 173, 168, 197, 258, 356, 308, 235, 161, 257, 213, 225, 481, 239, 175, 174, 152, 174, 163, 290, 238, 115, 145, 123, 205, 189, 299, 148, 106, 84, 88, 101, 149, 247, 228, 126, 126, 116, 123, 141, 122, 314, 108, 88, 90, 81, 159, 293, 148, 113, 120, 121, 87, 170, 245, 175, 115, 173, 140, 128, 99, 259, 210, 143, 152, 214, 231, 183, 305, 194, 171, 196, 269, 181, 221, 212, 152, 115, 112, 89, 111, 106, 220, 143, 100, 133, 113, 133, 202, 341, 279, 125, 151, 122, 156, 130, 197, 213, 176, 140, 160, 145, 190, 271, 225, 132, 120, 206, 151, 168, 168, 185, 94, 82, 104, 109, 123, 178, 133, 107, 206, 158, 183, 119, 121, 85, 102, 170, 117, 109, 60, 75, 94, 75, 97, 175, 128, 120, 120, 125, 124, 199, 208, 125, 119, 54, 51, 69, 80, 184, 131, 128, 204, 156, 137, 192, 213, 153, 114, 122, 72, 126, 86, 97, 185, 114], "gate_b": [331, 304, 133, 184, 142, 219, 208, 460, 315, 144, 133, 232, 174, 231, 407, 270, 182, 164, 163, 187, 188, 326, 228, 131, 146, 145, 147, 153, 333, 253, 132, 152, 120, 160, 155, 209, 191, 94, 162, 95, 179, 162, 257, 229, 135, 141, 105, 151, 149, 304, 201, 135, 127, 124, 152, 111, 298, 188, 141, 156, 173, 128, 168, 347, 257, 173, 161, 181, 278, 254, 290, 287, 176, 210, 276, 233, 263, 229, 167, 109, 124, 119, 133, 166, 277, 168, 89, 133, 137, 124, 162, 338, 270, 179, 172, 196, 179, 275, 319, 300, 179, 149, 188, 185, 215, 323, 217, 143, 181, 212, 176, 203, 300, 212, 194, 120, 118, 142, 158, 252, 132, 142, 232, 241, 162, 131, 147, 133, 123, 166, 162, 173, 128, 122, 121, 127, 171, 198, 151, 138, 130, 142, 147, 235, 315, 170, 149, 162, 102, 186, 101, 199, 141, 69, 68, 71, 103, 100, 231, 103, 200, 106, 125, 121, 174, 156, 303, 128], "side": [97, 101, 155, 128, 94, 117, 139, 226, 145, 135, 107, 123, 131, 257, 215, 102, 125, 98, 146, 140, 123, 170, 117, 122, 128, 85, 114, 192, 174, 92, 118, 99, 118, 112, 103, 164, 106, 130, 117, 103, 136, 177, 134, 168, 99, 105, 132, 142, 111, 174, 127, 126, 143, 128, 111, 150, 157, 116, 118, 144, 136, 160, 138, 197, 137, 118, 210, 171, 152, 120, 197, 135, 199, 164, 200, 143, 180, 136, 107, 102, 102, 107, 114, 127, 203, 105, 104, 141, 119, 114, 136, 106, 111, 69, 101, 65, 71, 148, 118, 70, 96, 77, 71, 115, 80, 111, 94, 67, 106, 81, 87, 77, 138, 121, 160, 158, 113, 136, 284, 118, 75, 90, 167, 141, 140, 130, 108, 144, 144, 245, 166, 108, 159, 147, 112, 221, 114, 165, 101, 179, 203, 125, 139, 224, 172, 120, 205, 267, 205, 275, 325, 346, 227, 237, 121, 134, 141, 133, 278, 211, 86, 85, 130, 93, 110, 120, 185, 93], "ac": [36, 36, 33, 13, 16, 17, 17, 46, 47, 20, 16, 25, 13, 32, 39, 17, 19, 16, 17, 15, 25, 48, 16, 11, 11, 7, 14, 15, 28, 25, 13, 10, 7, 14, 20, 34, 25, 6, 9, 19, 13, 8, 41, 14, 11, 7, 11, 7, 7, 28, 16, 6, 7, 16, 9, 18, 25, 23, 10, 12, 15, 12, 17, 39, 20, 17, 22, 11, 32, 13, 31, 24, 22, 30, 18, 13, 17, 7, 11, 8, 10, 6, 13, 8, 10, 9, 6, 4, 5, 8, 12, 11, 10, 4, 6, 5, 6, 3, 14, 5, 11, 5, 4, 9, 10, 9, 12, 3, 6, 15, 8, 3, 9, 8, 2, 3, 6, 8, 4, 9, 6, 4, 11, 9, 6, 4, 8, 2, 6, 4, 4, 5, 2, 3, 7, 4, 7, 5, 7, 8, 8, 2, 3, 7, 12, 9, 7, 4, 4, 7, 11, 6, 6, 2, 5, 5, 5, 7, 7, 11, 5, 5, 2, 3, 4, 4, 11, 6], "ratio": [4.4, 4.7, 6.3, 2.7, 4.0, 3.2, 2.8, 4.4, 6.1, 3.9, 4.0, 4.1, 2.5, 4.5, 3.5, 2.8, 3.9, 3.7, 3.7, 3.0, 5.3, 6.1, 2.7, 3.0, 2.6, 2.0, 3.0, 2.8, 3.5, 5.1, 3.7, 3.0, 2.1, 3.8, 4.9, 5.5, 4.8, 1.7, 2.2, 6.1, 3.0, 1.7, 8.0, 2.0, 3.2, 2.1, 3.4, 1.9, 1.7, 3.6, 3.4, 1.6, 1.8, 4.3, 2.6, 4.2, 3.6, 4.8, 2.7, 2.5, 3.3, 2.9, 4.2, 4.9, 3.3, 3.9, 4.2, 1.9, 4.8, 2.3, 3.9, 3.9, 4.0, 5.3, 2.4, 2.3, 2.6, 1.2, 2.6, 2.5, 3.0, 1.9, 3.6, 2.0, 1.4, 2.2, 2.0, 1.0, 1.4, 2.2, 2.4, 1.4, 1.5, 1.1, 1.4, 1.3, 1.5, 0.5, 2.2, 0.9, 2.4, 1.4, 1.0, 2.0, 2.1, 1.3, 2.2, 0.9, 1.5, 3.0, 1.9, 0.7, 1.5, 1.5, 0.4, 0.8, 1.8, 2.1, 0.7, 1.6, 1.8, 1.2, 1.8, 1.7, 1.2, 1.1, 2.1, 0.6, 1.6, 0.7, 0.9, 1.3, 0.6, 0.9, 2.1, 0.9, 1.8, 0.9, 1.8, 1.8, 1.8, 0.5, 0.7, 1.1, 1.7, 2.2, 1.5, 0.8, 1.1, 1.3, 2.2, 0.8, 1.2, 0.5, 1.3, 1.4, 1.3, 1.6, 1.0, 2.4, 1.2, 1.6, 0.6, 0.9, 1.1, 1.1, 1.6, 1.8]}, "monthly": {"labels": ["2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04"], "total": [8691, 15029, 15674, 14688, 11235, 14065, 2418], "gate_a": [3526, 5381, 5180, 5139, 3546, 3941, 680], "gate_b": [3210, 5720, 5977, 6100, 4399, 4559, 1007], "side": [1955, 3928, 4517, 3449, 3290, 5565, 731], "ac": [367, 556, 536, 259, 160, 186, 30], "ratio": [4.2, 3.7, 3.4, 1.8, 1.4, 1.3, 1.2]}, "weekly": {"labels": ["2025-10-13", "2025-10-20", "2025-10-27", "2025-11-03", "2025-11-10", "2025-11-17", "2025-11-24", "2025-12-01", "2025-12-08", "2025-12-15", "2025-12-22", "2025-12-29", "2026-01-05", "2026-01-12", "2026-01-19", "2026-01-26", "2026-02-02", "2026-02-09", "2026-02-16", "2026-02-23", "2026-03-02", "2026-03-09", "2026-03-16", "2026-03-23", "2026-03-30", "2026-04-06"], "total": [1573, 4360, 4472, 3723, 3439, 2942, 3211, 3043, 3097, 3524, 4149, 4085, 2852, 3385, 3356, 3407, 3234, 2983, 1969, 2903, 2741, 3460, 3578, 3183, 2796, 335], "gate_a": [740, 1695, 1811, 1366, 1224, 1003, 1068, 967, 1031, 1124, 1422, 1402, 896, 1301, 1094, 1307, 1130, 823, 654, 823, 704, 1021, 688, 1183, 802, 114], "gate_b": [635, 1661, 1591, 1438, 1308, 1119, 1178, 1186, 1135, 1370, 1624, 1554, 1096, 1253, 1620, 1456, 1427, 1116, 777, 1035, 1018, 1277, 1040, 745, 1185, 128], "side": [198, 1004, 1070, 919, 907, 820, 965, 890, 931, 1030, 1103, 1129, 860, 831, 642, 644, 677, 1044, 538, 1045, 1019, 1162, 1850, 1255, 809, 93], "ac": [72, 189, 162, 156, 111, 123, 110, 87, 104, 125, 150, 118, 64, 56, 43, 60, 52, 38, 30, 33, 35, 49, 45, 42, 34, 6], "ratio": [4.6, 4.3, 3.6, 4.2, 3.2, 4.2, 3.4, 2.9, 3.4, 3.5, 3.6, 2.9, 2.2, 1.7, 1.3, 1.8, 1.6, 1.3, 1.5, 1.1, 1.3, 1.4, 1.3, 1.3, 1.2, 1.8]}};
+const ANALYTICS= {"dow_avg": {"labels": ["週一", "週二", "週三", "週四", "週五", "週六", "週日"], "total": [402, 410, 408, 436, 507, 694, 537], "ac": [10, 10, 10, 10, 12, 20, 15]}, "heatmap": {"x": ["10/13", "10/20", "10/27", "11/03", "11/10", "11/17", "11/24", "12/01", "12/08", "12/15", "12/22", "12/29", "01/05", "01/12", "01/19", "01/26", "02/02", "02/09", "02/16", "02/23", "03/02", "03/09", "03/16", "03/23", "03/30", "04/06"], "y": ["週一", "週二", "週三", "週四", "週五", "週六", "週日"], "z": [[0, 523, 514, 482, 368, 356, 350, 342, 374, 374, 434, 546, 326, 293, 373, 451, 342, 448, 339, 380, 347, 437, 473, 434, 400, 335], [0, 485, 401, 436, 419, 335, 405, 334, 390, 473, 523, 570, 338, 407, 424, 366, 407, 360, 0, 376, 344, 453, 483, 393, 313, 0], [0, 404, 612, 461, 353, 326, 314, 327, 373, 449, 566, 745, 315, 369, 383, 419, 499, 335, 0, 362, 327, 392, 358, 361, 327, 0], [0, 533, 518, 501, 466, 373, 438, 374, 350, 416, 661, 557, 358, 371, 406, 445, 414, 387, 0, 369, 423, 410, 530, 381, 340, 0], [0, 605, 713, 474, 534, 407, 480, 419, 431, 405, 557, 664, 399, 500, 553, 485, 448, 565, 605, 581, 382, 658, 506, 425, 370, 0], [813, 1042, 1103, 786, 806, 620, 513, 771, 700, 803, 792, 577, 700, 785, 634, 705, 606, 548, 540, 445, 538, 695, 729, 722, 373, 0], [760, 768, 611, 583, 493, 525, 711, 476, 479, 604, 616, 426, 416, 660, 583, 536, 518, 340, 485, 390, 380, 415, 499, 467, 673, 0]]}, "rolling7": {"labels": ["2025-10-18", "2025-10-19", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-25", "2025-10-26", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-01", "2025-11-02", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-08", "2025-11-09", "2025-11-10", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-15", "2025-11-16", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-22", "2025-11-23", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-27", "2025-11-28", "2025-11-29", "2025-11-30", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-06", "2025-12-07", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-13", "2025-12-14", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-18", "2025-12-19", "2025-12-20", "2025-12-21", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-25", "2025-12-26", "2025-12-27", "2025-12-28", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-24", "2026-01-25", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-01-31", "2026-02-01", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-07", "2026-02-08", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-14", "2026-02-15", "2026-02-16", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-02-28", "2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-07", "2026-03-08", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-14", "2026-03-15", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-21", "2026-03-22", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-28", "2026-03-29", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06"], "values": [813.0, 786.5, 698.7, 645.2, 597.0, 586.3, 589.0, 621.7, 622.9, 621.6, 609.6, 639.3, 637.1, 652.6, 661.3, 638.9, 634.3, 639.3, 617.7, 615.3, 581.1, 535.9, 531.9, 515.6, 513.1, 497.7, 492.7, 501.3, 504.1, 491.3, 489.6, 477.6, 473.7, 460.4, 442.3, 415.7, 420.3, 419.4, 429.4, 427.7, 437.0, 447.4, 432.1, 458.7, 457.6, 447.4, 449.3, 440.1, 431.4, 468.3, 434.7, 439.3, 447.3, 453.9, 450.4, 452.1, 442.0, 442.4, 442.4, 454.3, 465.1, 474.6, 470.9, 485.6, 503.4, 512.0, 519.1, 535.9, 570.9, 592.6, 591.0, 592.7, 608.7, 615.4, 641.0, 626.1, 641.4, 610.7, 583.6, 552.1, 519.0, 457.6, 429.1, 391.3, 408.9, 407.4, 402.7, 412.6, 420.3, 422.1, 436.6, 448.7, 483.6, 495.0, 497.4, 499.4, 504.4, 512.0, 490.4, 479.4, 490.6, 482.3, 487.4, 493.0, 483.3, 493.4, 486.7, 471.1, 477.0, 488.4, 484.0, 478.7, 464.6, 462.0, 477.1, 470.4, 447.0, 443.1, 459.9, 451.6, 426.1, 410.6, 445.6, 474.9, 488.9, 462.4, 437.9, 441.0, 445.3, 441.9, 428.3, 414.7, 410.0, 405.4, 400.4, 408.1, 379.7, 393.0, 391.6, 404.4, 420.0, 429.3, 427.4, 466.9, 489.3, 494.3, 499.4, 503.7, 498.9, 516.0, 494.3, 499.1, 511.1, 505.6, 492.7, 493.1, 471.9, 460.3, 459.3, 454.7, 449.9, 438.4, 433.6, 427.7, 419.9, 370.0, 399.4, 390.1]}, "comparison": {"wow_ft": -13.3, "wow_ac": -22.2, "mom_ft": 4.8, "mom_ac": 2.8, "last7_ft": 2731, "prev7_ft": 3149, "last7_ac": 35, "prev7_ac": 45, "last30_ft": 13732, "prev30_ft": 13108, "last30_ac": 183, "prev30_ac": 178, "last7_avg": 390.1, "overall_avg": 486.9, "last7_vs_avg": -19.9, "last7_range": "2026-03-31 ~ 2026-04-06", "last30_range": "2026-03-08 ~ 2026-04-06"}};
+let filtered = [...RAW], sortField = 'date', sortDir = 1;
+
+// ── Selects init ──────────────────────────────────────────────
+(function(){
+  const ms = document.getElementById('fMonth');
+  const ws = document.getElementById('fWeek');
+  [...new Set(RAW.map(r=>r.month))].sort().forEach(m=>{
+    const o=document.createElement('option');o.value=m;o.textContent=m;ms.appendChild(o);
+  });
+  [...new Set(RAW.map(r=>r.week))].sort().forEach(w=>{
+    const o=document.createElement('option');o.value=w;o.textContent=w;ws.appendChild(o);
+  });
+  if(RAW.length){
+    document.getElementById('fFrom').value = RAW[0].date;
+    document.getElementById('fTo').value   = RAW[RAW.length-1].date;
+  }
+})();
+
+// ── Filter ────────────────────────────────────────────────────
+function applyFilters(){
+  const mo = document.getElementById('fMonth').value;
+  const wk = document.getElementById('fWeek').value;
+  const fr = document.getElementById('fFrom').value;
+  const to = document.getElementById('fTo').value;
+  filtered = RAW.filter(r=>
+    (!mo || r.month===mo) && (!wk || r.week===wk) &&
+    (!fr || r.date>=fr) && (!to || r.date<=to)
+  );
+  renderTable();
+}
+function clearFilters(){
+  document.getElementById('fMonth').value='';
+  document.getElementById('fWeek').value='';
+  if(RAW.length){
+    document.getElementById('fFrom').value=RAW[0].date;
+    document.getElementById('fTo').value=RAW[RAW.length-1].date;
+  }
+  applyFilters();
+}
+
+// ── Sort ──────────────────────────────────────────────────────
+function sortBy(f){
+  if(sortField===f) sortDir*=-1; else {sortField=f;sortDir=1;}
+  renderTable();
+}
+
+// ── Table render ──────────────────────────────────────────────
+function ratioClass(v){
+  if(v<5)  return 'ratio-low';
+  if(v<12) return 'ratio-mid';
+  return 'ratio-hi';
+}
+function renderTable(){
+  const data = [...filtered].sort((a,b)=>{
+    const va = sortField==='date' ? a[sortField] : +a[sortField];
+    const vb = sortField==='date' ? b[sortField] : +b[sortField];
+    return va>vb?sortDir:va<vb?-sortDir:0;
+  });
+
+  document.getElementById('tableBody').innerHTML = data.length
+    ? data.map(r=>`
+    <tr>
+      <td class="date-cell">${r.date}</td>
+      <td class="r">${r.gate_a.toLocaleString()}</td>
+      <td class="r">${r.gate_b.toLocaleString()}</td>
+      <td class="r">${r.side.toLocaleString()}</td>
+      <td class="r" style="font-weight:600;color:#f1f5f9">${r.total.toLocaleString()}</td>
+      <td class="r" style="color:#c4b5fd">${r.ac.toLocaleString()}</td>
+      <td>
+        <div class="ratio-bar-wrap">
+          <span class="ratio-pill ${ratioClass(r.ratio)}">${r.ratio}%</span>
+          <div class="ratio-bar-bg"><div class="ratio-bar-fill" style="width:${Math.min(r.ratio*3,100)}%"></div></div>
+        </div>
+      </td>
+    </tr>`).join('')
+    : '<tr><td colspan="7" class="no-data">無符合條件的記錄</td></tr>';
+
+  const tT  = data.reduce((s,r)=>s+r.total ,0);
+  const tA  = data.reduce((s,r)=>s+r.gate_a,0);
+  const tB  = data.reduce((s,r)=>s+r.gate_b,0);
+  const tS  = data.reduce((s,r)=>s+r.side  ,0);
+  const tAC = data.reduce((s,r)=>s+r.ac    ,0);
+  const tR  = tT>0 ? (tAC/tT*100).toFixed(1)+'%' : '—';
+
+  document.getElementById('ftA').textContent  = tA.toLocaleString();
+  document.getElementById('ftB').textContent  = tB.toLocaleString();
+  document.getElementById('ftS').textContent  = tS.toLocaleString();
+  document.getElementById('ftT').textContent  = tT.toLocaleString();
+  document.getElementById('ftAC').textContent = tAC.toLocaleString();
+  document.getElementById('ftR').textContent  = tR;
+
+  document.getElementById('kpiFt').textContent    = tT.toLocaleString();
+  document.getElementById('kpiRatio').textContent = tR;
+  document.getElementById('statsLabel').innerHTML =
+    `<b>${data.length}</b> 天 &nbsp;·&nbsp; 人流 <b>${tT.toLocaleString()}</b> &nbsp;·&nbsp; 掃碼 <b>${tAC.toLocaleString()}</b> &nbsp;·&nbsp; 佔比 <b>${tR}</b>`;
+}
+
+// ── Plotly shared config ──────────────────────────────────────
+const LAY = {
+  paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+  font:{color:'#94a3b8',size:11},
+  margin:{t:10,b:40,l:48,r:48},
+  legend:{orientation:'h',y:1.08,x:0,font:{size:11}},
+  xaxis:{gridcolor:'#1e2a3a',tickfont:{size:10},tickangle:-30},
+  yaxis:{gridcolor:'#1e2a3a',zeroline:false,title:{text:'人次',font:{size:11,color:'#64748b'}}},
+  yaxis2:{overlaying:'y',side:'right',tickformat:'.0%',tickvals:[0,.05,.1,.15,.2,.25,.3],
+           range:[0,.35],gridcolor:'transparent',title:{text:'佔比',font:{size:11,color:'#34d399'}}},
+  bargap:0.3,
+};
+const CFG = {responsive:true,displayModeBar:false};
+
+// Main chart (dual axis: bars + ratio line + 7-day rolling avg)
+function drawMain(mode){
+  const d = CHARTS[mode];
+  const ratioFrac = d.ratio.map(v=>v/100);
+  const traces = [
+    {x:d.labels,y:d.total, name:'人流合計',type:'bar', marker:{color:'rgba(96,165,250,.7)'},yaxis:'y'},
+    {x:d.labels,y:d.ac,    name:'門禁掃碼',type:'bar', marker:{color:'rgba(167,139,250,.8)'},yaxis:'y'},
+    {x:d.labels,y:ratioFrac,name:'存量佔比',type:'scatter',mode:'lines+markers',
+      line:{color:'#34d399',width:2},marker:{size:4,color:'#34d399'},yaxis:'y2'},
+  ];
+  // Add 7-day rolling average only in daily mode
+  if(mode==='daily'){
+    traces.push({
+      x:ANALYTICS.rolling7.labels, y:ANALYTICS.rolling7.values,
+      name:'7日均線', type:'scatter', mode:'lines',
+      line:{color:'#fbbf24',width:2,dash:'dot'},yaxis:'y',
+    });
+  }
+  Plotly.newPlot('chartMain', traces, {...LAY}, CFG);
+}
+
+function switchMode(mode,btn){
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawMain(mode);
+}
+
+// Monthly bar+line
+(function(){
+  const d = CHARTS.monthly;
+  const ratioFrac = d.ratio.map(v=>v/100);
+  Plotly.newPlot('chartMonthly',[
+    {x:d.labels,y:d.total,name:'人流',type:'bar',marker:{color:'rgba(96,165,250,.75)'},yaxis:'y'},
+    {x:d.labels,y:d.ac,   name:'掃碼',type:'bar',marker:{color:'rgba(167,139,250,.8)'},yaxis:'y'},
+    {x:d.labels,y:ratioFrac,name:'佔比',type:'scatter',mode:'lines+markers',
+      line:{color:'#34d399',width:2},marker:{size:5},yaxis:'y2'},
+  ],{...LAY,margin:{t:10,b:35,l:48,r:48}},CFG);
+})();
+
+// Door pie
+(function(){
+  const tA=RAW.reduce((s,r)=>s+r.gate_a,0);
+  const tB=RAW.reduce((s,r)=>s+r.gate_b,0);
+  const tS=RAW.reduce((s,r)=>s+r.side,0);
+  Plotly.newPlot('chartDoors',[{
+    labels:['大門A（LEO左）','大門B（LEO右）','側門'],
+    values:[tA,tB,tS],
+    type:'pie',hole:.42,
+    marker:{colors:['#60a5fa','#34d399','#fb923c']},
+    textinfo:'label+percent',
+    textfont:{size:12,color:'#e2e8f0'},
+    insidetextorientation:'radial',
+  }],{
+    paper_bgcolor:'transparent',
+    font:{color:'#94a3b8',size:12},
+    margin:{t:10,b:10,l:10,r:10},
+    showlegend:false,
+  },CFG);
+})();
+
+// ── Analytics ─────────────────────────────────────────────────
+(function(){
+  const c = ANALYTICS.comparison;
+
+  function changeTag(val){
+    if(val===null||val===undefined) return '<span class="cmp-change cmp-flat">—</span>';
+    const cls = val>0 ? 'cmp-up' : val<0 ? 'cmp-down' : 'cmp-flat';
+    const icon = val>0 ? '↑' : val<0 ? '↓' : '→';
+    return `<span class="cmp-change ${cls}">${icon} ${Math.abs(val)}%</span>`;
+  }
+
+  const cards = [
+    {
+      title: '近7天人流',
+      val: c.last7_ft.toLocaleString(),
+      sub: `vs 前7天 ${c.prev7_ft!==null ? c.prev7_ft.toLocaleString() : '—'} &nbsp;·&nbsp; ${c.last7_range}`,
+      change: c.wow_ft,
+    },
+    {
+      title: '近7天門禁掃碼',
+      val: c.last7_ac.toLocaleString(),
+      sub: `vs 前7天 ${c.prev7_ac!==null ? c.prev7_ac.toLocaleString() : '—'}`,
+      change: c.wow_ac,
+    },
+    {
+      title: '近30天人流',
+      val: c.last30_ft.toLocaleString(),
+      sub: `vs 前30天 ${c.prev30_ft!==null ? c.prev30_ft.toLocaleString() : '—'} &nbsp;·&nbsp; ${c.last30_range}`,
+      change: c.mom_ft,
+    },
+    {
+      title: '近7天日均 vs 整體均值',
+      val: c.last7_avg.toLocaleString(),
+      sub: `整體日均 ${c.overall_avg.toLocaleString()}`,
+      change: c.last7_vs_avg,
+    },
+  ];
+
+  document.getElementById('cmpCards').innerHTML = cards.map(cd=>`
+    <div class="cmp-card">
+      <div class="cmp-title">${cd.title}</div>
+      <div class="cmp-val">${cd.val}</div>
+      ${changeTag(cd.change)}
+      <div class="cmp-sub">${cd.sub}</div>
+    </div>`).join('');
+})();
+
+// Day-of-week chart
+(function(){
+  const d = ANALYTICS.dow_avg;
+  Plotly.newPlot('chartDoW',[
+    {x:d.labels,y:d.total,name:'平均人流',type:'bar',marker:{color:'rgba(96,165,250,.8)'}},
+    {x:d.labels,y:d.ac,   name:'平均掃碼',type:'bar',marker:{color:'rgba(167,139,250,.85)'}},
+  ],{
+    paper_bgcolor:'transparent',plot_bgcolor:'transparent',
+    font:{color:'#94a3b8',size:11},
+    margin:{t:10,b:35,l:48,r:10},
+    legend:{orientation:'h',y:1.08,x:0,font:{size:11}},
+    xaxis:{gridcolor:'#1e2a3a',tickfont:{size:11}},
+    yaxis:{gridcolor:'#1e2a3a',zeroline:false},
+    bargap:0.25,barmode:'group',
+  },CFG);
+})();
+
+// Heatmap
+(function(){
+  const h = ANALYTICS.heatmap;
+  Plotly.newPlot('chartHeatmap',[{
+    x: h.x, y: h.y, z: h.z,
+    type: 'heatmap',
+    colorscale: [
+      [0,   '#0d1117'],
+      [0.01,'#1e2a3a'],
+      [0.3, '#1e3a8a'],
+      [0.6, '#2563eb'],
+      [1,   '#60a5fa'],
+    ],
+    showscale: false,
+    hovertemplate: '%{x} %{y}: %{z} 人<extra></extra>',
+    xgap: 2, ygap: 2,
+  }],{
+    paper_bgcolor:'transparent',plot_bgcolor:'transparent',
+    font:{color:'#94a3b8',size:10},
+    margin:{t:10,b:55,l:50,r:10},
+    xaxis:{tickangle:-45,tickfont:{size:9},gridcolor:'transparent'},
+    yaxis:{tickfont:{size:11},gridcolor:'transparent',autorange:'reversed'},
+  },CFG);
+})();
+
+// Boot
+drawMain('daily');
+applyFilters();
+</script>
+</body>
+</html>
