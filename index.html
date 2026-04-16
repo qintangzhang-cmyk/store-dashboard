@@ -7,11 +7,11 @@
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0d1117;color:#e2e8f0;padding:28px 32px;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f1f5f9;color:#1e293b;padding:28px 32px;min-height:100vh}
 
 /* Header */
 .page-header{margin-bottom:28px}
-h1{font-size:20px;font-weight:700;color:#f8fafc}
+h1{font-size:20px;font-weight:700;color:#0f172a}
 .subtitle{font-size:13px;color:#64748b;margin-top:4px}
 
 /* Section label */
@@ -19,65 +19,65 @@ h1{font-size:20px;font-weight:700;color:#f8fafc}
 
 /* KPI row */
 .kpi-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px}
-.kpi{background:#161c2d;border:1px solid #1e2a3a;border-radius:12px;padding:16px 20px;min-width:140px;flex:1}
-.kpi .num{font-size:26px;font-weight:800;color:#f8fafc;line-height:1.1}
-.kpi .sub{font-size:11px;color:#475569;margin-top:2px}
+.kpi{background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;min-width:140px;flex:1;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.kpi .num{font-size:26px;font-weight:800;color:#0f172a;line-height:1.1}
+.kpi .sub{font-size:11px;color:#64748b;margin-top:2px}
 .kpi .label{font-size:12px;color:#64748b;margin-top:5px}
-.kpi .sub{font-size:11px;color:#475569;margin-top:2px}
-.kpi.c1 .num{color:#60a5fa}
-.kpi.c2 .num{color:#a78bfa}
-.kpi.c3 .num{color:#34d399}
-.kpi.c4 .num{color:#fbbf24}
-.kpi.c5 .num{color:#f87171}
+.kpi .sub{font-size:11px;color:#64748b;margin-top:2px}
+.kpi.c1 .num{color:#2563eb}
+.kpi.c2 .num{color:#7c3aed}
+.kpi.c3 .num{color:#059669}
+.kpi.c4 .num{color:#d97706}
+.kpi.c5 .num{color:#dc2626}
 
 /* Chart cards */
 .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:4px}
 .chart-grid.single{grid-template-columns:1fr}
 @media(max-width:860px){.chart-grid{grid-template-columns:1fr}}
-.card{background:#161c2d;border:1px solid #1e2a3a;border-radius:14px;padding:18px 20px}
+.card{background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .card.span2{grid-column:1/-1}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
-.card-title{font-size:14px;font-weight:600;color:#f1f5f9}
-.card-hint{font-size:12px;color:#475569}
+.card-title{font-size:14px;font-weight:600;color:#0f172a}
+.card-hint{font-size:12px;color:#64748b}
 .toggle-group{display:flex;gap:5px}
-.tbtn{padding:4px 11px;border-radius:6px;border:1px solid #2d3748;background:transparent;color:#94a3b8;font-size:12px;cursor:pointer;transition:all .15s}
+.tbtn{padding:4px 11px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;color:#64748b;font-size:12px;cursor:pointer;transition:all .15s}
 .tbtn.active{background:#1e3a8a;border-color:#3b82f6;color:#fff}
 .chart-box{height:270px}
 .chart-box.sm{height:230px}
 .chart-box.lg{height:310px}
 
 /* Filter bar */
-.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#161c2d;border:1px solid #1e2a3a;border-radius:10px;padding:12px 16px;margin-bottom:14px}
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .filter-bar label{font-size:12px;color:#64748b;margin-right:3px}
-.filter-bar select,.filter-bar input[type=date]{background:#0d1117;border:1px solid #2d3748;color:#e2e8f0;padding:5px 10px;border-radius:7px;font-size:13px;outline:none;cursor:pointer}
+.filter-bar select,.filter-bar input[type=date]{background:#f8fafc;border:1px solid #cbd5e1;color:#1e293b;padding:5px 10px;border-radius:7px;font-size:13px;outline:none;cursor:pointer}
 .filter-bar select:focus,.filter-bar input:focus{border-color:#3b82f6}
-.sep{width:1px;height:20px;background:#1e2a3a;margin:0 4px}
-.stats-badge{font-size:13px;color:#94a3b8;margin-left:auto;white-space:nowrap}
-.stats-badge b{color:#f8fafc}
-.clear-btn{padding:4px 11px;border-radius:6px;border:1px solid #2d3748;background:transparent;color:#94a3b8;font-size:12px;cursor:pointer}
-.clear-btn:hover{color:#f8fafc;border-color:#64748b}
+.sep{width:1px;height:20px;background:#e2e8f0;margin:0 4px}
+.stats-badge{font-size:13px;color:#475569;margin-left:auto;white-space:nowrap}
+.stats-badge b{color:#0f172a}
+.clear-btn{padding:4px 11px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;color:#64748b;font-size:12px;cursor:pointer}
+.clear-btn:hover{color:#0f172a;border-color:#475569}
 
 /* Table */
-.table-wrap{border-radius:12px;border:1px solid #1e2a3a;overflow:auto;max-height:520px}
+.table-wrap{border-radius:12px;border:1px solid #e2e8f0;overflow:auto;max-height:520px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{background:#0f1623;color:#94a3b8;font-weight:500;padding:10px 13px;text-align:left;border-bottom:1px solid #1e2a3a;white-space:nowrap;position:sticky;top:0;z-index:1;cursor:pointer;user-select:none}
+thead th{background:#f8fafc;color:#475569;font-weight:500;padding:10px 13px;text-align:left;border-bottom:1px solid #e2e8f0;white-space:nowrap;position:sticky;top:0;z-index:1;cursor:pointer;user-select:none}
 thead th.r{text-align:right}
-thead th:hover{color:#e2e8f0}
-tbody tr{border-bottom:1px solid #161e2e;transition:background .1s}
-tbody tr:hover{background:#1a2234}
-td{padding:8px 13px;color:#cbd5e1;white-space:nowrap}
+thead th:hover{color:#1e293b}
+tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+tbody tr:hover{background:#f8fafc}
+td{padding:8px 13px;color:#334155;white-space:nowrap}
 td.r{text-align:right}
-td.date-cell{color:#94a3b8;font-size:12.5px}
+td.date-cell{color:#64748b;font-size:12.5px}
 .ratio-pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:12px;font-weight:600;color:#fff}
-.ratio-low{background:rgba(96,165,250,.25);color:#93c5fd}
-.ratio-mid{background:rgba(52,211,153,.25);color:#6ee7b7}
-.ratio-hi{background:rgba(251,191,36,.25);color:#fde68a}
+.ratio-low{background:rgba(59,130,246,.15);color:#2563eb}
+.ratio-mid{background:rgba(16,185,129,.15);color:#059669}
+.ratio-hi{background:rgba(245,158,11,.15);color:#d97706}
 .ratio-bar-wrap{display:flex;align-items:center;gap:6px;min-width:100px}
-.ratio-bar-bg{flex:1;height:6px;background:#1e2a3a;border-radius:3px;overflow:hidden}
+.ratio-bar-bg{flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}
 .ratio-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#3b82f6,#8b5cf6);transition:width .3s}
-tfoot td{background:#0f1623;font-weight:600;color:#f1f5f9;border-top:1px solid #2d3748;position:sticky;bottom:0;padding:9px 13px}
+tfoot td{background:#f8fafc;font-weight:600;color:#0f172a;border-top:1px solid #e2e8f0;position:sticky;bottom:0;padding:9px 13px}
 tfoot td.r{text-align:right}
-.no-data{text-align:center!important;color:#475569;padding:36px;font-size:14px}
+.no-data{text-align:center!important;color:#94a3b8;padding:36px;font-size:14px}
 
 /* Legend */
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#64748b;margin-bottom:6px}
@@ -85,28 +85,28 @@ tfoot td.r{text-align:right}
 .dot{width:10px;height:10px;border-radius:2px}
 
 /* Analytics compare cards */
-.cmp-card{background:#161c2d;border:1px solid #1e2a3a;border-radius:12px;padding:16px 20px;flex:1;min-width:160px}
+.cmp-card{background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;flex:1;min-width:160px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .cmp-card .cmp-title{font-size:11px;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
-.cmp-card .cmp-val{font-size:22px;font-weight:800;color:#f8fafc;line-height:1}
-.cmp-card .cmp-sub{font-size:12px;color:#475569;margin-top:4px}
+.cmp-card .cmp-val{font-size:22px;font-weight:800;color:#0f172a;line-height:1}
+.cmp-card .cmp-sub{font-size:12px;color:#64748b;margin-top:4px}
 .cmp-card .cmp-change{display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:700;padding:2px 8px;border-radius:8px;margin-top:6px}
-.cmp-up{background:rgba(52,211,153,.15);color:#34d399}
-.cmp-down{background:rgba(248,113,113,.15);color:#f87171}
-.cmp-flat{background:rgba(148,163,184,.12);color:#94a3b8}
+.cmp-up{background:rgba(5,150,105,.12);color:#059669}
+.cmp-down{background:rgba(220,38,38,.12);color:#dc2626}
+.cmp-flat{background:rgba(100,116,139,.1);color:#64748b}
 </style>
 </head>
 <body>
 
 <div class="page-header">
   <h1>門店到店數據綜合看板</h1>
-  <div class="subtitle">人流計數器（Lark）× 門禁掃碼（長桥後台）· 更新：2026-04-15 20:37</div>
+  <div class="subtitle">人流計數器（Lark）× 門禁掃碼（長桥後台）· 更新：2026-04-16 10:07</div>
 </div>
 
 <!-- Legend -->
 <div class="legend">
   <div class="legend-item"><div class="dot" style="background:#60a5fa"></div>人流計數器（B+C+D）</div>
   <div class="legend-item"><div class="dot" style="background:#a78bfa"></div>門禁掃碼數</div>
-  <div class="legend-item"><div class="dot" style="background:#34d399"></div>存量用戶佔比（掃碼/人流）</div>
+  <div class="legend-item"><div class="dot" style="background:#059669"></div>存量用戶佔比（掃碼/人流）</div>
 </div>
 
 <!-- KPI -->
@@ -278,7 +278,7 @@ tfoot td.r{text-align:right}
         <td class="r" id="ftAC">—</td>
         <td id="ftR">—</td>
       </tr>
-      <tr style="color:#94a3b8;font-weight:400">
+      <tr style="color:#64748b;font-weight:400">
         <td>日均</td>
         <td class="r" id="ftAvgA">—</td>
         <td class="r" id="ftAvgB">—</td>
@@ -361,8 +361,8 @@ function renderTable(){
       <td class="r">${r.gate_a.toLocaleString()}</td>
       <td class="r">${r.gate_b.toLocaleString()}</td>
       <td class="r">${r.side.toLocaleString()}</td>
-      <td class="r" style="font-weight:600;color:#f1f5f9">${r.total.toLocaleString()}</td>
-      <td class="r" style="color:#c4b5fd">${r.ac.toLocaleString()}</td>
+      <td class="r" style="font-weight:600;color:#0f172a">${r.total.toLocaleString()}</td>
+      <td class="r" style="color:#7c3aed">${r.ac.toLocaleString()}</td>
       <td>
         <div class="ratio-bar-wrap">
           <span class="ratio-pill ${ratioClass(r.ratio)}">${r.ratio}%</span>
@@ -433,13 +433,13 @@ function renderTable(){
 // ── Plotly shared config ──────────────────────────────────────
 const LAY = {
   paper_bgcolor:'transparent', plot_bgcolor:'transparent',
-  font:{color:'#94a3b8',size:11},
+  font:{color:'#475569',size:11},
   margin:{t:10,b:40,l:48,r:48},
   legend:{orientation:'h',y:1.08,x:0,font:{size:11}},
-  xaxis:{gridcolor:'#1e2a3a',tickfont:{size:10},tickangle:-30},
-  yaxis:{gridcolor:'#1e2a3a',zeroline:false,title:{text:'人次',font:{size:11,color:'#64748b'}}},
+  xaxis:{gridcolor:'#e2e8f0',tickfont:{size:10},tickangle:-30},
+  yaxis:{gridcolor:'#e2e8f0',zeroline:false,title:{text:'人次',font:{size:11,color:'#64748b'}}},
   yaxis2:{overlaying:'y',side:'right',tickformat:'.0%',tickvals:[0,.05,.1,.15,.2,.25,.3],
-           range:[0,.35],gridcolor:'transparent',title:{text:'佔比',font:{size:11,color:'#34d399'}}},
+           range:[0,.35],gridcolor:'transparent',title:{text:'佔比',font:{size:11,color:'#059669'}}},
   bargap:0.3,
 };
 const CFG = {responsive:true,displayModeBar:false};
@@ -452,7 +452,7 @@ function drawMain(mode){
     {x:d.labels,y:d.total, name:'人流合計',type:'bar', marker:{color:'rgba(96,165,250,.7)'},yaxis:'y'},
     {x:d.labels,y:d.ac,    name:'門禁掃碼',type:'bar', marker:{color:'rgba(167,139,250,.8)'},yaxis:'y'},
     {x:d.labels,y:ratioFrac,name:'存量佔比',type:'scatter',mode:'lines+markers',
-      line:{color:'#34d399',width:2},marker:{size:4,color:'#34d399'},yaxis:'y2'},
+      line:{color:'#059669',width:2},marker:{size:4,color:'#059669'},yaxis:'y2'},
   ];
   // Add 7-day rolling average only in daily mode
   if(mode==='daily'){
@@ -479,7 +479,7 @@ function switchMode(mode,btn){
     {x:d.labels,y:d.total,name:'人流',type:'bar',marker:{color:'rgba(96,165,250,.75)'},yaxis:'y'},
     {x:d.labels,y:d.ac,   name:'掃碼',type:'bar',marker:{color:'rgba(167,139,250,.8)'},yaxis:'y'},
     {x:d.labels,y:ratioFrac,name:'佔比',type:'scatter',mode:'lines+markers',
-      line:{color:'#34d399',width:2},marker:{size:5},yaxis:'y2'},
+      line:{color:'#059669',width:2},marker:{size:5},yaxis:'y2'},
   ],{...LAY,margin:{t:10,b:35,l:48,r:48}},CFG);
 })();
 
@@ -494,11 +494,11 @@ function switchMode(mode,btn){
     type:'pie',hole:.42,
     marker:{colors:['#60a5fa','#34d399','#fb923c']},
     textinfo:'label+percent',
-    textfont:{size:12,color:'#e2e8f0'},
+    textfont:{size:12,color:'#334155'},
     insidetextorientation:'radial',
   }],{
     paper_bgcolor:'transparent',
-    font:{color:'#94a3b8',size:12},
+    font:{color:'#475569',size:12},
     margin:{t:10,b:10,l:10,r:10},
     showlegend:false,
   },CFG);
@@ -559,11 +559,11 @@ function switchMode(mode,btn){
     {x:d.labels,y:d.ac,   name:'平均掃碼',type:'bar',marker:{color:'rgba(167,139,250,.85)'}},
   ],{
     paper_bgcolor:'transparent',plot_bgcolor:'transparent',
-    font:{color:'#94a3b8',size:11},
+    font:{color:'#475569',size:11},
     margin:{t:10,b:35,l:48,r:10},
     legend:{orientation:'h',y:1.08,x:0,font:{size:11}},
-    xaxis:{gridcolor:'#1e2a3a',tickfont:{size:11}},
-    yaxis:{gridcolor:'#1e2a3a',zeroline:false},
+    xaxis:{gridcolor:'#e2e8f0',tickfont:{size:11}},
+    yaxis:{gridcolor:'#e2e8f0',zeroline:false},
     bargap:0.25,barmode:'group',
   },CFG);
 })();
@@ -575,18 +575,18 @@ function switchMode(mode,btn){
     x: h.x, y: h.y, z: h.z,
     type: 'heatmap',
     colorscale: [
-      [0,   '#0d1117'],
-      [0.01,'#1e2a3a'],
-      [0.3, '#1e3a8a'],
-      [0.6, '#2563eb'],
-      [1,   '#60a5fa'],
+      [0,   '#f0f9ff'],
+      [0.01,'#dbeafe'],
+      [0.3, '#93c5fd'],
+      [0.6, '#3b82f6'],
+      [1,   '#1d4ed8'],
     ],
     showscale: false,
     hovertemplate: '%{x} %{y}: %{z} 人<extra></extra>',
     xgap: 2, ygap: 2,
   }],{
     paper_bgcolor:'transparent',plot_bgcolor:'transparent',
-    font:{color:'#94a3b8',size:10},
+    font:{color:'#475569',size:10},
     margin:{t:10,b:55,l:50,r:10},
     xaxis:{tickangle:-45,tickfont:{size:9},gridcolor:'transparent'},
     yaxis:{tickfont:{size:11},gridcolor:'transparent',autorange:'reversed'},
