@@ -93,9 +93,54 @@ tfoot td.r{text-align:right}
 .cmp-up{background:rgba(5,150,105,.12);color:#059669}
 .cmp-down{background:rgba(220,38,38,.12);color:#dc2626}
 .cmp-flat{background:rgba(100,116,139,.1);color:#64748b}
+
+/* ── AUTH OVERLAY ───────────────────────────────────── */
+#auth-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#0c1520 0%,#1a2d42 100%);
+  display:flex;align-items:center;justify-content:center;
+}
+.auth-card{
+  background:#fff;border-radius:16px;padding:48px 40px;
+  width:360px;text-align:center;
+  box-shadow:0 24px 64px rgba(0,0,0,.45);
+}
+.auth-logo{font-size:22px;font-weight:800;color:#0c1520;margin-bottom:4px}
+.auth-logo em{font-style:normal;color:#c8a86a}
+.auth-subtitle{font-size:12px;color:#667285;margin-bottom:32px}
+.auth-divider{height:1px;background:#eee;margin:24px 0}
+.auth-error{font-size:12px;color:#b83030;margin-top:16px;min-height:18px}
+#app{display:none}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">LONGBRIDGE <em>Café</em></div>
+    <div class="auth-subtitle">内部数据看板 · 仅限员工访问</div>
+    <div id="g_id_onload"
+      data-client_id="884541501389-rsulrh11bksq41k9hpfhol2cks4ue5sj.apps.googleusercontent.com"
+      data-callback="handleGoogleAuth"
+      data-auto_select="true">
+    </div>
+    <div class="g_id_signin"
+      data-type="standard"
+      data-shape="rectangular"
+      data-theme="outline"
+      data-text="signin_with"
+      data-size="large"
+      data-locale="zh_CN"
+      data-width="280">
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+    <div class="auth-divider"></div>
+    <div style="font-size:11px;color:#a4aebe">仅限 @longbridge 邮箱账号访问</div>
+  </div>
+</div>
+<div id="app">
+
 
 <div class="page-header">
   <h1>門店到店數據綜合看板</h1>
@@ -596,6 +641,39 @@ function switchMode(mode,btn){
 // Boot
 drawMain('daily');
 applyFilters();
+</script>
+
+</div><!-- /#app -->
+<script>
+(function(){
+  const ALLOWED = ["longbridge-inc.com", "longbridge.com", "longbridge.sg", "longbridge.hk"];
+  const STORAGE_KEY = 'cafe_auth_v1';
+  const TTL_MS = 86400000;
+  function showApp() {
+    document.getElementById('auth-overlay').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
+  function parseJwt(token) {
+    try { return JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); }
+    catch(e) { return null; }
+  }
+  window.handleGoogleAuth = function(response) {
+    const payload = parseJwt(response.credential);
+    if (!payload) { document.getElementById('auth-error').textContent = '验证失败，请重试。'; return; }
+    const email = (payload.email || '').toLowerCase();
+    const domain = email.split('@')[1] || '';
+    if (ALLOWED.includes(domain)) {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ email, ts: Date.now() }));
+      showApp();
+    } else {
+      document.getElementById('auth-error').textContent = email + ' 无访问权限，请使用 @longbridge 邮箱。';
+    }
+  };
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null');
+    if (saved && (Date.now() - saved.ts) < TTL_MS) { showApp(); return; }
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>
